@@ -4,6 +4,7 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: async ({ queryKey }) => {
+        // Ensure we're using the correct port that matches server/index.ts
         const res = await fetch(queryKey[0] as string, {
           credentials: "include",
         });

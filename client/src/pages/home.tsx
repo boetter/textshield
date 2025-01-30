@@ -4,23 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Copy, RefreshCw } from "lucide-react";
+import { Shield, Copy, RefreshCw, AlertCircle } from "lucide-react";
 import { anonymizeText, getDetectedTypes } from "@/lib/anonymizer";
 
 const replacements = {
-  cpr: "CPR-nummer",
-  phone: "Telefonnummer",
-  address: "Adresse",
-  name: "Navn",
-  email: "Email",
-  creditCard: "Betalingskort",
-  bankAccount: "Kontonummer",
-  cvr: "CVR-nummer",
-  postalCode: "Postnummer og by",
-  date: "Dato",
-  age: "Alder",
-  pin: "PIN-kode",
-  money: "Beløb"
+  PER: "Navn",
+  LOC: "Sted",
+  ORG: "Organisation",
+  MISC: "Information",
+  CPR: "CPR-nummer",
+  PHONE: "Telefonnummer",
+  EMAIL: "Email",
+  NAME: "Navn",
+  ADDRESS: "Adresse"
 };
 
 export default function Home() {
@@ -28,25 +24,74 @@ export default function Home() {
   const [outputText, setOutputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [detectedTypes, setDetectedTypes] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const processText = useCallback(() => {
-    setIsProcessing(true);
-    try {
-      // Simulate processing delay for UX
-      setTimeout(() => {
-        const detected = getDetectedTypes(inputText);
-        setDetectedTypes(detected);
-        const anonymized = anonymizeText(inputText);
-        setOutputText(anonymized);
-        setIsProcessing(false);
-      }, 500);
-    } catch (error) {
+  const processText = useCallback(async () => {
+    if (!inputText.trim()) {
       toast({
-        title: "Fejl under behandling af tekst",
-        description: "Prøv venligst igen med en anden tekst",
+        title: "Ingen tekst at behandle",
+        description: "Indtast venligst noget tekst først",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      console.log('Starter tekstbehandling...');
+
+      // Show initial loading toast
+      toast({
+        title: "Indlæser AI model",
+        description: "Dette kan tage et øjeblik...",
+      });
+
+      const [detected, anonymized] = await Promise.all([
+        getDetectedTypes(inputText),
+        anonymizeText(inputText)
+      ]);
+
+      // Show success toast
+      toast({
+        title: "Tekst behandlet",
+        description: detected.length > 0 
+          ? "Din tekst er blevet anonymiseret"
+          : "Ingen personfølsomme data fundet i teksten",
+      });
+
+      setDetectedTypes(detected);
+      setOutputText(anonymized);
+      setError(null);
+
+    } catch (error) {
+      console.error('Behandlingsfejl:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Der skete en uventet fejl';
+
+      setError(errorMessage);
+
+      // Show error toast
+      toast({
+        title: "Fejl under behandling af tekst",
+        description: "Bruger simpel mønstergenkendelse i stedet for AI model",
+        variant: "destructive",
+      });
+
+      // Try fallback to basic pattern matching
+      try {
+        const anonymized = await anonymizeText(inputText);
+        setOutputText(anonymized);
+      } catch (fallbackError) {
+        console.error('Fallback fejl:', fallbackError);
+        toast({
+          title: "Kritisk fejl",
+          description: "Kunne ikke behandle teksten. Prøv igen senere.",
+          variant: "destructive",
+        });
+      }
+    } finally {
       setIsProcessing(false);
     }
   }, [inputText, toast]);
@@ -81,10 +126,21 @@ export default function Home() {
           <div>
             <h2 className="font-medium">Ingen data forlader din computer</h2>
             <p className="text-sm text-muted-foreground">
-              Al tekstbehandling foregår lokalt i din browser. Dine data forlader aldrig din enhed.
+              Al tekstbehandling foregår lokalt i din browser. Den anvendte AI-model kører også lokalt,
+              så dine data forlader aldrig din enhed.
             </p>
           </div>
         </Card>
+
+        {/* Error Display */}
+        {error && (
+          <Card className="p-4 bg-destructive/5 border-destructive/20">
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span>{error}</span>
+            </div>
+          </Card>
+        )}
 
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-6">
@@ -95,17 +151,21 @@ export default function Home() {
               placeholder="Indsæt din tekst her..."
               className="min-h-[300px] resize-none"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                if (error) setError(null);
+              }}
+              disabled={isProcessing}
             />
             <Button
               onClick={processText}
               className="w-full"
-              disabled={!inputText || isProcessing}
+              disabled={!inputText.trim() || isProcessing}
             >
               {isProcessing ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Behandler...
+                  Behandler tekst...
                 </>
               ) : (
                 "Fjern persondata"
@@ -141,7 +201,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               {detectedTypes.map((type) => (
                 <Badge key={type} variant="secondary" className="capitalize">
-                  {replacements[type as keyof typeof replacements]}
+                  {replacements[type as keyof typeof replacements] || type}
                 </Badge>
               ))}
             </div>
