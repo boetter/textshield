@@ -1,0 +1,80 @@
+boetter@boetterMac textshield % npm install
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 470 packages, and audited 471 packages in 8s
+
+60 packages are looking for funding
+  run `npm fund` for details
+
+1 moderate severity vulnerability
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+boetter@boetterMac textshield % npm run dev
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1912:16)
+    at listenInCluster (node:net:1969:12)
+    at node:net:2178:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1948:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v22.12.0
+boetter@boetterMac textshield % npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+vite v5.4.10 building for production...
+✓ 1656 modules transformed.
+../dist/public/index.html                   1.59 kB │ gzip:  0.62 kB
+../dist/public/assets/index-Dsmo7mRO.css   55.55 kB │ gzip:  9.80 kB
+../dist/public/assets/index-D--z27t8.js   233.94 kB │ gzip: 74.78 kB
+✓ built in 936ms
+
+  dist/index.js  4.3kb
+
+⚡ Done in 3ms
+boetter@boetterMac textshield % npm run dev  
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1912:16)
+    at listenInCluster (node:net:1969:12)
+    at node:net:2178:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1948:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v22.12.0
